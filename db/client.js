@@ -1,0 +1,50 @@
+/**
+ * better-sqlite3 커넥션 싱글턴.
+ *
+ * 원래 계획은 Prisma + SQLite였지만, 이 실행 환경의 네트워크 아웃바운드 정책이
+ * Prisma 엔진 바이너리 다운로드 호스트(binaries.prisma.sh)를 막고 있어
+ * `prisma generate`가 403으로 실패한다. better-sqlite3는 npm 레지스트리에서
+ * 받은 소스를 로컬에서 네이티브로 빌드하기 때문에 같은 문제가 없다 — 여전히
+ * 진짜 SQLite 파일 DB에 실제 SQL로 연결되고, Next.js 서버 재시작 후에도
+ * 데이터가 그대로 남는다(=인메모리 상태가 아니다).
+ *
+ * Next.js dev 서버는 파일 변경마다 모듈을 다시 평가할 수 있으므로,
+ * globalThis에 커넥션을 캐시해 매 요청마다 새 DB 핸들을 여는 것을 방지한다.
+ */
+const path = require('path');
+const fs = require('fs');
+const Database = require('better-sqlite3');
+const { seedAll, resetAndSeed } = require('./seed.js');
+
+const DB_PATH = path.join(process.cwd(), 'data', 'app.db');
+// Next.js가 API 라우트를 웹팩으로 번들링하면 이 파일도 .next/server/chunks/*.js로
+// 옮겨져 __dirname이 더 이상 실제 db/ 폴더를 가리키지 않는다. 항상 프로젝트 루트
+// 기준(process.cwd())으로 schema.sql을 찾아야 프로덕션 빌드(next build/start)에서도 깨지지 않는다.
+const SCHEMA_PATH = path.join(process.cwd(), 'db', 'schema.sql');
+
+function openDb() {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  const db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+
+  const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
+  db.exec(schema);
+
+  const { n } = db.prepare('SELECT COUNT(*) AS n FROM persona').get();
+  if (n === 0) {
+    const counts = seedAll(db);
+    console.log('[hire-match] 최초 실행 — DB 자동 시딩:', counts);
+  }
+
+  return db;
+}
+
+function getDb() {
+  if (!globalThis.__hireMatchDb) {
+    globalThis.__hireMatchDb = openDb();
+  }
+  return globalThis.__hireMatchDb;
+}
+
+module.exports = { getDb, resetAndSeed, DB_PATH };

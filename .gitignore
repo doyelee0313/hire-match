@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+dist/
+*.log
+.DS_Store
+
+# SQLite dev database (auto-created + auto-seeded on first `npm run dev`) — regenerate locally
+data/

@@ -1,0 +1,25 @@
+{
+  "name": "hire-match",
+  "version": "0.3.0",
+  "private": true,
+  "description": "코드프레소 사내 채용 판단 기록 툴 — Next.js + SQLite(better-sqlite3) full-stack",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/seed.js --reset",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.2.5"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
