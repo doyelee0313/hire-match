@@ -72,9 +72,9 @@ BASE_URL=http://localhost:3000 npm run smoke
 | `POST /api/swipes` | 스와이프 기록 `{ employeeId, candidateId, action, superLikeReason? }` — `persona_id`는 서버가 employee 레코드로 직접 채워서, 클라이언트 조작으로 다른 직무를 판단할 수 없다 |
 | `PATCH /api/swipes/:id` | 패스 사유를 나중에(시간 제한 없이) 붙인다 `{ passReason }` |
 | `GET /api/recommendations?personaId=` | 평가 축 기반 스코어 + 수퍼라이크 패스트트랙 + "누가 왜 좋아했는지" + 직무 인사이트(`insights`) + 후보별 결정 기록(`decision`) |
+| `GET /api/leaderboard?personaId=` | 실무진별 Super Like 적중률(안목 랭킹) |
 | `GET /api/logs?personaId=` | SWIPE_LOG 테이블 뷰 |
 | `POST /api/candidates/:id/contact` | HR "컨택 진행" — `contacted_at`을 DB에 영구 기록 |
-| `GET /api/ranking?personaId=` | 실무진별 Super Like → 실제 합격 전환율 랭킹 ("이달의 인재 스카우터") |
 | `GET /api/profile?employeeId=` | 실무진 본인의 채용 페르소나 (좋아요·수퍼라이크 태그 기반 타이틀) |
 | `POST /api/candidates/:id/decision` | HR 최종 결정 체크리스트 저장 (포지션적합성/기여도/대체불가능성/직무적합성/ROI/충성도) |
 
@@ -82,7 +82,7 @@ BASE_URL=http://localhost:3000 npm run smoke
 
 - **로그인** — 실무진 이름 카드 또는 "HR 담당자" 카드 선택 → PIN(데모용 `0000`) 입력. 로그인하면
   그 신원이 세션 쿠키로 고정된다. 실무진 계정은 본인 직무 스와이프 화면만 볼 수 있고 HR 화면
-  진입 UI 자체가 없으며, HR 전용 API(`recommendations`/`logs`/`ranking`/`contact`/`decision`)도
+  진입 UI 자체가 없으며, HR 전용 API(`recommendations`/`logs`/`leaderboard`/`contact`/`decision`)도
   서버가 세션을 확인해 실무진 계정으로는 403을 반환한다. 반대로 HR 계정은 스와이프 화면 없이
   HR 화면만 본다. 세션은 별도 테이블 없이 "신원 + 서명" 쿠키로만 유지되는 무상태 방식이라,
   서버를 재시작하면 전원 로그아웃된다.
@@ -107,13 +107,15 @@ BASE_URL=http://localhost:3000 npm run smoke
 - **HR 추천** — `직무별` 좋아요/수퍼라이크가 반응한 평가 축 빈도로 만든 선호 프로필과 후보의
   고득점 축을 매칭해 스코어를 매긴다. 각 후보 카드에는 좋아요한 실무진 명단과 수퍼라이크 사유가
   근거로 붙는다.
+- **안목 랭킹** — 실무진별 Super Like 적중률(HR 화면 "안목" 탭). 적중률 = `hired / (hired + rejected)`이고,
+  아직 결과가 안 나온(`PENDING`) 픽은 분모에서 제외한다 — 판정이 안 났을 뿐인 픽을 실패로 세지 않기
+  위해서다. 결정된 판단이 하나도 없는 실무진은 순위 없이 "판정 대기"로만 뜨고, 적중률 최상위 1명에게만
+  "이달의 인재 스카우터" 배지가 붙는다.
 - **기록 탭** — 모든 판단이 append-only로 SWIPE_LOG에 쌓이고 시각순으로 조회할 수 있다.
 - **컨택 진행** — HR이 후보를 컨택하면 `contacted_at`이 DB에 기록되어, 서버를 재시작해도
   "컨택 완료" 상태가 유지된다.
 - **HR 인사이트 패널** — 직무별로 실무진이 실제로 반응한 직무 특화 축 TOP 2, 공통 역량 축 TOP 3,
   가장 흔한 패스 사유 TOP 3를 추천 화면 상단에 보여준다.
-- **이달의 인재 스카우터** — 실무진별 Super Like 대비 실제 합격(`hired_status = HIRED`) 전환율을
-  랭킹으로 보여준다.
 - **Super Like 알림 피드** — HR 화면 상단에 직무 전체 기준 최근 Super Like 5건이 사유와 함께 노출된다.
 - **잠재력 신호 배지 (HR 화면 전용)** — 연차는 낮지만 공통 역량 축에서 70점 이상인 게 2개 이상인
   후보에 HR 상세 화면에서 배지를 달아, HR이 연차만 보고 지나치지 않게 한다

@@ -1,6 +1,6 @@
 {
   "name": "hire-match",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "코드프레소 사내 채용 판단 기록 툴 — Next.js + SQLite(better-sqlite3) full-stack",
   "scripts": {

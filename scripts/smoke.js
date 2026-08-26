@@ -74,6 +74,12 @@ async function login(page, name, pin = '0000') {
   await page.waitForTimeout(400);
   results.contactBtnTextAfter = await contactBtn.innerText();
 
+  // 안목 랭킹 탭 — 개발자 페르소나는 e01이 2건 모두 HIRED라 배지가 붙어야 한다
+  await page.click('button:has-text("안목")');
+  await page.waitForTimeout(400);
+  results.leaderboardRows = await page.locator('table.data tbody tr').count();
+  results.leaderboardBadgeCount = await page.locator('text=이달의 인재 스카우터').count();
+
   // 기록 탭
   await page.click('button:has-text("기록")');
   await page.waitForTimeout(400);

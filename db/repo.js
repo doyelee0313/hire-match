@@ -242,28 +242,6 @@ function personaInsights(personaId) {
   };
 }
 
-/** 실무진별 Super Like → 실제 합격 전환율 랭킹 ("이달의 인재 스카우터"). */
-function scoutRanking(personaId) {
-  const db = getDb();
-  const employees = listEmployees().filter((e) => e.personaId === personaId);
-  const ranking = employees.map((e) => {
-    const rows = db
-      .prepare(`SELECT candidate_id FROM swipe_log WHERE employee_id = ? AND action = 'SUPER_LIKE'`)
-      .all(e.id);
-    const superLikeCount = rows.length;
-    const hiredCount = rows.filter((r) => getCandidate(r.candidate_id)?.hiredStatus === 'HIRED').length;
-    const rate = superLikeCount > 0 ? hiredCount / superLikeCount : null;
-    return { employee: e, superLikeCount, hiredCount, rate };
-  });
-  ranking.sort((a, b) => {
-    if (a.rate === null && b.rate === null) return 0;
-    if (a.rate === null) return 1;
-    if (b.rate === null) return -1;
-    return b.rate - a.rate || b.hiredCount - a.hiredCount;
-  });
-  return ranking;
-}
-
 /** 직무 전체 기준 최근 Super Like N건 (HR 알림 피드). */
 function recentSuperLikes(personaId, limit) {
   const db = getDb();
@@ -467,6 +445,64 @@ function setContacted(candidateId) {
   return { id: candidateId, contactedAt };
 }
 
+/**
+ * 안목 랭킹 — 실무진별 Super Like 적중률. Super Like만 집계 대상이다(Like/Pass는 제외 —
+ * 최종면접 패스트트랙으로 이어지는, 가장 무거운 판단이라 "안목"을 재는 기준으로 삼기에 적합하다).
+ *
+ * 적중률 = hired / (hired + rejected). 아직 결과가 안 나온 PENDING 후보에 대한 Super Like는
+ * 분모에서 제외한다 — 판정이 안 났을 뿐인 픽을 실패로 셀 이유가 없기 때문 (제품 결정, 팀 확인 완료).
+ * decided(=hired+rejected)가 0인 실무진은 순위·배지 대상에서 빠지고 "판정 대기"로만 표시된다.
+ */
+function leaderboard(personaId) {
+  const db = getDb();
+  const employees = listEmployees().filter((e) => e.personaId === personaId);
+  const rows = db
+    .prepare(
+      `SELECT sl.employee_id, c.hired_status FROM swipe_log sl
+       JOIN candidate c ON c.id = sl.candidate_id
+       WHERE sl.persona_id = ? AND sl.action = 'SUPER_LIKE'`
+    )
+    .all(personaId);
+
+  const stats = {};
+  for (const e of employees) stats[e.id] = { superLikes: 0, hired: 0, rejected: 0, pending: 0 };
+  for (const r of rows) {
+    const s = stats[r.employee_id];
+    if (!s) continue;
+    s.superLikes += 1;
+    if (r.hired_status === 'HIRED') s.hired += 1;
+    else if (r.hired_status === 'REJECTED') s.rejected += 1;
+    else s.pending += 1;
+  }
+
+  const board = employees.map((employee) => {
+    const s = stats[employee.id];
+    const decided = s.hired + s.rejected;
+    return {
+      employee,
+      superLikes: s.superLikes,
+      hired: s.hired,
+      rejected: s.rejected,
+      pending: s.pending,
+      decided,
+      accuracy: decided > 0 ? s.hired / decided : null,
+    };
+  });
+
+  board.sort((a, b) => {
+    const aRanked = a.decided > 0;
+    const bRanked = b.decided > 0;
+    if (aRanked !== bRanked) return aRanked ? -1 : 1;
+    if (aRanked && b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+    if (b.decided !== a.decided) return b.decided - a.decided;
+    if (b.superLikes !== a.superLikes) return b.superLikes - a.superLikes;
+    return a.employee.name.localeCompare(b.employee.name, 'ko');
+  });
+
+  const topId = board.length && board[0].decided > 0 ? board[0].employee.id : null;
+  return board.map((row) => ({ ...row, badge: row.employee.id === topId }));
+}
+
 module.exports = {
   listPersonas,
   getPersona,
@@ -482,13 +518,13 @@ module.exports = {
   votersOf,
   recommendations,
   logsForTable,
+  leaderboard,
   insertSwipe,
   patchPassReason,
   setContacted,
   signalProfile,
   employeeTasteProfile,
   personaInsights,
-  scoutRanking,
   recentSuperLikes,
   getDecision,
   saveDecision,
