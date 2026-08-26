@@ -99,6 +99,24 @@ select.picker{
 .pill.grey{background:var(--hero); color:var(--text-2); font-weight:500;}
 .pill.solid{background:var(--blue); color:var(--white);}
 .pill.xs{padding:3px 9px; font-size:12px; line-height:14px;}
+.pill.potential{background:var(--blue-deep); color:var(--white);}
+
+.pill.sig{gap:6px;}
+.pill.sig .sigw{font-size:10px; letter-spacing:-1px;}
+.pill.sig-high{border-color:var(--blue-deep); color:var(--blue-deep);}
+.pill.sig-high .sigw{color:var(--blue-deep);}
+.pill.sig-medium .sigw{color:var(--muted);}
+.pill.sig .sigaxis{font-size:11px; font-weight:500; color:var(--muted); border-left:1px solid var(--border-sub); padding-left:6px; margin-left:2px;}
+
+/* ── 평가 축 점수 / 종합 적합도 ─────────────────────────────────────────── */
+.fit-badge{
+  align-self:flex-start; display:inline-flex; align-items:baseline; gap:6px;
+  background:var(--blue-wash); color:var(--blue); border-radius:var(--r-lg);
+  padding:6px 12px; margin-top:4px;
+}
+.fit-badge b{font-size:20px; font-weight:700; line-height:1;}
+.fit-badge span{font-size:11px; font-weight:600; letter-spacing:.3px;}
+.axisrow-score{color:var(--blue); font-weight:600;}
 
 /* ── 페르소나 선택 ──────────────────────────────────────────────────────── */
 .plist{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
@@ -207,6 +225,28 @@ select.picker{
   gap:16px; text-align:center; background:var(--white); border:1px dashed var(--border-sub);
   border-radius:var(--r-2xl); padding:32px;
 }
+
+.check-badge{
+  width:56px; height:56px; border-radius:var(--r-full); background:var(--blue); color:var(--white);
+  display:grid; place-items:center; font-size:26px; font-weight:700; animation:popIn .35s ease-out;
+}
+.persona-title{
+  font-size:30px; animation:popIn .4s ease-out;
+  background:linear-gradient(90deg, var(--blue), var(--blue-deep));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+@keyframes popIn{ from{ transform:scale(.85); opacity:0; } to{ transform:none; opacity:1; } }
+
+.persona-bars{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:14px; }
+.pbar-track{
+  height:10px; border-radius:var(--r-full); background:var(--hero); border:1px solid var(--border-sub);
+  overflow:hidden; margin-top:6px;
+}
+.pbar-fill{
+  display:block; height:100%; border-radius:var(--r-full); background:var(--blue);
+  transition:width .6s cubic-bezier(.2,.8,.2,1);
+}
+.pbar-fill.signal{ background:var(--blue-deep); }
 
 /* ── HR ─────────────────────────────────────────────────────────────────── */
 .rec{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:24px; align-items:start;}

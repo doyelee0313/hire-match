@@ -8,6 +8,7 @@ import { esc } from '../lib/format';
 import SwipeCard from './SwipeCard';
 import ReasonPanel from './ReasonPanel';
 import SuperLikeModal from './SuperLikeModal';
+import PersonaReveal from './PersonaReveal';
 
 export default function SwipeScreen({ employeeId, onToast }) {
   const deckKey = employeeId ? `/api/deck?employeeId=${employeeId}` : null;
@@ -191,12 +192,7 @@ export default function SwipeScreen({ employeeId, onToast }) {
         </div>
 
         <div className="deck" id="deck">
-          {deck.length === 0 && (
-            <div className="done">
-              <h3>이번 채용은 다 보셨습니다</h3>
-              <p className="cap">새 지원자가 들어오면 여기에 다시 쌓입니다.</p>
-            </div>
-          )}
+          {deck.length === 0 && <PersonaReveal employeeId={employeeId} />}
           {deck.map((c, i) => (
             <SwipeCard
               key={c.id}

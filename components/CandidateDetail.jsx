@@ -1,14 +1,20 @@
 'use client';
 import { useState } from 'react';
 import CareerList from './CareerList';
-import { postContact } from '../lib/api';
+import AxisScoreBoard from './AxisScoreBoard';
+import DecisionChecklistModal from './DecisionChecklistModal';
+import { postContact, postDecision } from '../lib/api';
 import { ACT_ICON } from '../lib/constants';
 import { esc } from '../lib/format';
+import { hasHiddenPotential } from '../lib/signalAxis';
+
+const GATE_KEYS = ['positionFit', 'contribution', 'irreplaceable', 'roleFit', 'roiOk', 'loyaltyOk'];
 
 export default function CandidateDetail({ scored, onToast, onContacted }) {
-  const { candidate: c, voters, passReasonCounts } = scored;
+  const { candidate: c, voters, passReasonCounts, decision } = scored;
   const [contactedAt, setContactedAt] = useState(c.contactedAt);
   const [submitting, setSubmitting] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   const handleContact = async () => {
     setSubmitting(true);
@@ -22,12 +28,25 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
     }
   };
 
+  const handleSaveDecision = async (answers) => {
+    await postDecision(c.id, answers);
+    onContacted?.();
+    setChecklistOpen(false);
+    onToast(`<b>${esc(c.name)}</b> 결정 체크리스트 기록됨`);
+  };
+
+  const passedGates = decision ? GATE_KEYS.filter((k) => decision[k]).length : 0;
+
   return (
     <div className="card stack detailcard">
       <div className="chead">
-        <span className="code num">{c.name}</span>
+        <div className="row spread g8">
+          <span className="code num">{c.name}</span>
+          {hasHiddenPotential(c) && <span className="pill xs potential">잠재력 신호</span>}
+        </div>
         <span className="name">{c.headline}</span>
         <p className="liner">“{c.oneLiner}”</p>
+        <div className="fit-badge"><b className="num">{c.fitScore}</b><span>종합 적합도</span></div>
       </div>
       <div className="metrics">
         {c.metrics.map(([v, l], i) => (
@@ -37,23 +56,24 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
       <div className="cwrap">
         <div className="cbody">
           <div>
-            <span className="sec">경력</span>
+            <span className="sec">경력 · 주요 프로젝트</span>
             <CareerList career={c.career} />
           </div>
           <div>
-            <span className="sec">스킬</span>
+            <span className="sec">보유 기술</span>
             <div className="row wrapr g6">
-              {c.tags.map((t) => <span className="pill" key={t}>{t}</span>)}
+              {c.skills.map((s) => <span className="pill" key={s}>{s}</span>)}
             </div>
           </div>
-          {c.signalTags.length > 0 && (
+          {c.certifications.length > 0 && (
             <div>
-              <span className="sec">강점 신호</span>
+              <span className="sec">자격증</span>
               <div className="row wrapr g6">
-                {c.signalTags.map((t) => <span className="pill line" key={t}>{t}</span>)}
+                {c.certifications.map((cert) => <span className="pill line" key={cert}>{cert}</span>)}
               </div>
             </div>
           )}
+          <AxisScoreBoard axisScores={c.axisScores} />
           <div>
             <span className="sec">좋아요한 실무진 {voters.length}명</span>
             <div className="stack g8">
@@ -83,11 +103,23 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
           </div>
         </div>
       </div>
-      <div style={{ padding: '4px 24px 24px' }}>
+      <div className="stack g8" style={{ padding: '4px 24px 24px' }}>
+        <button className="btn-2 full" type="button" onClick={() => setChecklistOpen(true)}>
+          {decision ? `결정 체크리스트 · ${passedGates}/6` : '최종 결정 체크리스트 작성'}
+        </button>
         <button className="btn full" type="button" disabled={!!contactedAt || submitting} onClick={handleContact}>
           {contactedAt ? '컨택 완료' : '컨택 진행'}
         </button>
       </div>
+
+      {checklistOpen && (
+        <DecisionChecklistModal
+          candidate={c}
+          initial={decision}
+          onSave={handleSaveDecision}
+          onCancel={() => setChecklistOpen(false)}
+        />
+      )}
     </div>
   );
 }

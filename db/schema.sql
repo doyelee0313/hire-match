@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS employee (
   name        TEXT NOT NULL,
   department  TEXT NOT NULL,
   role        TEXT NOT NULL,
-  persona_id  TEXT NOT NULL REFERENCES persona(id)
+  persona_id  TEXT NOT NULL REFERENCES persona(id),
+  pin_hash    TEXT -- 로그인용 PIN 해시. 기존 DB 파일에는 없을 수 있어 db/client.js가 부팅 시 마이그레이션한다.
 );
 CREATE INDEX IF NOT EXISTS idx_employee_persona ON employee(persona_id);
 
@@ -25,10 +26,11 @@ CREATE TABLE IF NOT EXISTS candidate (
   headline            TEXT NOT NULL,
   one_liner           TEXT NOT NULL,
   years_of_experience INTEGER NOT NULL,
-  metrics             TEXT NOT NULL, -- JSON: [[value,label], ...]
-  career              TEXT NOT NULL, -- JSON: [{org,role,period,bullets:[]}, ...]
-  tags                TEXT NOT NULL, -- JSON: string[]  (스코어링 입력값)
-  signal_tags         TEXT NOT NULL, -- JSON: string[]  (직무 무관 공통 평가 축)
+  metrics             TEXT NOT NULL, -- JSON: [[value,label], ...] (HR 상세 화면에서만 표시)
+  career              TEXT NOT NULL, -- JSON: [{org,role,period,bullets:[]}, ...] — 경력 타임라인 + 주요 프로젝트
+  skills              TEXT NOT NULL, -- JSON: string[] — 이력서에 명시된 보유 기술 (실무진 카드에 노출)
+  certifications      TEXT NOT NULL, -- JSON: string[] — 자격증, 없으면 빈 배열
+  axis_scores         TEXT NOT NULL, -- JSON: [{id,label,weight,score,scope:'persona'|'common'}, ...] — lib/evaluationAxes.js가 SSOT, HR 화면 전용
   education           TEXT NOT NULL,
   portfolio_url       TEXT,
   hired_status        TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | HIRED | REJECTED
@@ -53,3 +55,19 @@ CREATE TABLE IF NOT EXISTS swipe_log (
 CREATE INDEX IF NOT EXISTS idx_log_persona ON swipe_log(persona_id);
 CREATE INDEX IF NOT EXISTS idx_log_employee ON swipe_log(employee_id);
 CREATE INDEX IF NOT EXISTS idx_log_candidate ON swipe_log(candidate_id);
+
+-- HR이 "컨택 진행" 전에 남기는 최종 결정 체크리스트 (POPUP Studio 채용 결정 게이트 6문항 참고).
+-- 후보 하나에 여러 번 기록될 수 있어 append-only로 두고, 최신 1건만 화면에 노출한다.
+CREATE TABLE IF NOT EXISTS decision_log (
+  id            TEXT PRIMARY KEY,
+  candidate_id  TEXT NOT NULL REFERENCES candidate(id),
+  position_fit  INTEGER NOT NULL DEFAULT 0, -- 포지션 적합성
+  contribution  INTEGER NOT NULL DEFAULT 0, -- 기여도
+  irreplaceable INTEGER NOT NULL DEFAULT 0, -- 대체불가능성
+  role_fit      INTEGER NOT NULL DEFAULT 0, -- 직무 적합성 (원문 "FDE 적합성"을 이 앱 맥락으로 일반화)
+  roi_ok        INTEGER NOT NULL DEFAULT 0, -- ROI
+  loyalty_ok    INTEGER NOT NULL DEFAULT 0, -- 충성도
+  note          TEXT,
+  created_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_decision_candidate ON decision_log(candidate_id);

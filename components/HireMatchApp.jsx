@@ -1,23 +1,18 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '../lib/fetcher';
+import { postLogout } from '../lib/api';
 import Header from './Header';
+import LoginScreen from './LoginScreen';
 import SwipeScreen from './SwipeScreen';
 import HRScreen from './HRScreen';
 import ToastStack from './ToastStack';
 
 export default function HireMatchApp() {
   const { data: empData } = useSWR('/api/employees', fetcher);
-  const [role, setRole] = useState('swiper');
-  const [employeeId, setEmployeeId] = useState(null);
+  const { data: session, mutate: mutateSession } = useSWR('/api/auth/session', fetcher);
   const [toasts, setToasts] = useState([]);
-
-  useEffect(() => {
-    if (empData?.employees?.length && !employeeId) {
-      setEmployeeId(empData.employees[0].id);
-    }
-  }, [empData, employeeId]);
 
   const pushToast = useCallback((html) => {
     const id = `${Date.now()}-${Math.random()}`;
@@ -27,23 +22,31 @@ export default function HireMatchApp() {
     }, 4200);
   }, []);
 
-  if (!empData) return null;
+  const handleLogout = useCallback(async () => {
+    await postLogout();
+    await mutateSession();
+  }, [mutateSession]);
+
+  if (!empData || !session) return null;
+
+  if (!session.employee && !session.hr) {
+    return (
+      <LoginScreen
+        employees={empData.employees}
+        personas={empData.personas}
+        onLoggedIn={() => mutateSession()}
+      />
+    );
+  }
 
   return (
     <>
-      <Header
-        role={role}
-        onRoleChange={setRole}
-        employees={empData.employees}
-        personas={empData.personas}
-        employeeId={employeeId}
-        onEmployeeChange={setEmployeeId}
-      />
+      <Header employee={session.employee} hr={session.hr} onLogout={handleLogout} />
       <main>
-        {role === 'hr' ? (
+        {session.hr ? (
           <HRScreen personas={empData.personas} onToast={pushToast} />
         ) : (
-          employeeId && <SwipeScreen employeeId={employeeId} onToast={pushToast} />
+          <SwipeScreen employeeId={session.employee.id} onToast={pushToast} />
         )}
       </main>
       <ToastStack toasts={toasts} />

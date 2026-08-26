@@ -1,8 +1,10 @@
 # Hire Match
 
 코드프레소 사내 채용 판단 기록 툴. 실무진이 지원자 카드를 스와이프(패스 / 좋아요 / 수퍼라이크)하면
-그 판단이 실시간으로 SQLite에 쌓이고, HR은 "누가, 왜 좋아했는지" 근거와 함께 태그 기반 추천 리스트를
-받아본다.
+그 판단이 실시간으로 SQLite에 쌓이고, HR은 "누가, 왜 좋아했는지" 근거와 함께 평가 축 기반 추천
+리스트를 받아본다. 후보 카드는 직무 특화 역량 2개 + 공통 역량 4개를 0~100점으로 수치화해 보여준다
+(POPUP Studio 인재기준 문서의 "축마다 가중치를 매겨 채점한다"는 방법론만 차용 — 문서의 실제 내용은
+쓰지 않는다).
 
 **스택**: Next.js 14 (App Router) + React 18 · SQLite (better-sqlite3) · SWR
 
@@ -46,14 +48,15 @@ BASE_URL=http://localhost:3000 npm run smoke
 
 | 경로 | 역할 |
 |---|---|
-| `db/schema.sql` | SQLite 테이블 정의 (persona / employee / candidate / swipe_log) |
+| `db/schema.sql` | SQLite 테이블 정의 (persona / employee / candidate / swipe_log / decision_log) |
 | `db/seed-data.js` | 시드 데이터 원본 (직무 · 실무진 · 지원자 36명 · 판단 로그) |
 | `db/seed.js` | 시드 삽입 로직 |
 | `db/client.js` | better-sqlite3 커넥션 싱글턴, 최초 부팅 시 자동 마이그레이션 + 자동 시딩 |
 | `db/repo.js` | 모든 쿼리 + 추천 스코어링 로직 (API 라우트는 이 파일만 통해 DB에 접근) |
+| `lib/evaluationAxes.js` | 평가 축 SSOT — 직무별 특화 축 2개 + 공통 축 4개, 가중치, 종합 적합도 계산 |
 | `app/api/*` | Next.js Route Handlers (아래 API 목록 참고) |
 | `components/*` | 클라이언트 React 컴포넌트 |
-| `lib/*` | fetch 헬퍼, 상수, 포맷터 |
+| `lib/*` | fetch 헬퍼, 상수, 포맷터, 인증, 평가 축 |
 | `scripts/seed.js` | 수동 시딩 CLI |
 | `scripts/smoke.js` | Playwright UI 스모크 테스트 |
 
@@ -62,40 +65,76 @@ BASE_URL=http://localhost:3000 npm run smoke
 | Method & Path | 설명 |
 |---|---|
 | `GET /api/employees` | 실무진 목록 + 직무(persona) 목록 |
+| `POST /api/auth/login` | 이름(employeeId) + PIN 로그인, 서명된 세션 쿠키 발급 (데모용 PIN은 전원 `0000`) |
+| `GET /api/auth/session` | 현재 로그인한 실무진 조회 |
+| `POST /api/auth/logout` | 로그아웃 (세션 쿠키 삭제) |
 | `GET /api/deck?employeeId=` | 로그인한 실무진의 **본인 직무 채용만** 담긴 미판단 덱 |
 | `POST /api/swipes` | 스와이프 기록 `{ employeeId, candidateId, action, superLikeReason? }` — `persona_id`는 서버가 employee 레코드로 직접 채워서, 클라이언트 조작으로 다른 직무를 판단할 수 없다 |
 | `PATCH /api/swipes/:id` | 패스 사유를 나중에(시간 제한 없이) 붙인다 `{ passReason }` |
-| `GET /api/recommendations?personaId=` | 태그 기반 스코어 + 수퍼라이크 패스트트랙 + "누가 왜 좋아했는지" |
+| `GET /api/recommendations?personaId=` | 평가 축 기반 스코어 + 수퍼라이크 패스트트랙 + "누가 왜 좋아했는지" + 직무 인사이트(`insights`) + 후보별 결정 기록(`decision`) |
 | `GET /api/logs?personaId=` | SWIPE_LOG 테이블 뷰 |
 | `POST /api/candidates/:id/contact` | HR "컨택 진행" — `contacted_at`을 DB에 영구 기록 |
+| `GET /api/ranking?personaId=` | 실무진별 Super Like → 실제 합격 전환율 랭킹 ("이달의 인재 스카우터") |
+| `GET /api/profile?employeeId=` | 실무진 본인의 채용 페르소나 (좋아요·수퍼라이크 태그 기반 타이틀) |
+| `POST /api/candidates/:id/decision` | HR 최종 결정 체크리스트 저장 (포지션적합성/기여도/대체불가능성/직무적합성/ROI/충성도) |
 
 ## 기능
 
+- **로그인** — 실무진 이름 카드 또는 "HR 담당자" 카드 선택 → PIN(데모용 `0000`) 입력. 로그인하면
+  그 신원이 세션 쿠키로 고정된다. 실무진 계정은 본인 직무 스와이프 화면만 볼 수 있고 HR 화면
+  진입 UI 자체가 없으며, HR 전용 API(`recommendations`/`logs`/`ranking`/`contact`/`decision`)도
+  서버가 세션을 확인해 실무진 계정으로는 403을 반환한다. 반대로 HR 계정은 스와이프 화면 없이
+  HR 화면만 본다. 세션은 별도 테이블 없이 "신원 + 서명" 쿠키로만 유지되는 무상태 방식이라,
+  서버를 재시작하면 전원 로그아웃된다.
 - **직무 접근 제한** — 각 실무진(`employee`)은 `persona_id`로 자신의 직무에 고정되어 있다. 개발팀
   실무진은 개발자 채용만, 세일즈팀은 세일즈 채용만 보인다. 이 제한은 클라이언트뿐 아니라
   `POST /api/swipes`에서도 서버가 강제한다 (다른 직무의 후보를 판단하려 하면 400 에러).
-- **이력서형 카드** — 회사명·연차를 앞세우지 않고, 핵심 경력 타임라인·정량 지표·스킬 태그·강점
-  신호 위주로 한 사람의 이력을 카드 하나에 압축했다. 카드 본문은 내부 스크롤이 가능하고, 스크롤
-  중에는 스와이프 제스처가 시작되지 않는다.
+- **이력서형 카드 (실무진 스와이프 화면)** — 회사명·연차를 앞세우지 않고, 헤드라인·한 줄 소개·
+  경력 타임라인·주요 프로젝트·보유 기술·자격증·학력 등 **이력서에 실제로 있는 내용만** 카드에
+  압축했다. 정량 지표(HR 화면 전용)나 평가 축 점수·종합 적합도 같은 회사 내부 재가공 수치는 이
+  화면에는 절대 노출하지 않는다 — 실무진은 이력서 원문만 보고 자기 판단으로 스와이프해야 하기
+  때문. 카드 본문은 내부 스크롤이 가능하고, 스크롤 중에는 스와이프 제스처가 시작되지 않는다.
+- **평가 축 점수 + 종합 적합도 (HR 화면 전용)** — 후보마다 직무 특화 역량 2개(예: 개발자 = 문제
+  해결력·완주 경험) + 공통 역량 4개(커뮤니케이션 명료성·문제 해결·실행 지향·협업·공유 마인드·
+  자기주도 학습)를 0~100점, high/medium 가중치로 채점한다. HR 후보 상세 화면에서만 이 6개 점수와
+  가중평균한 "종합 적합도" 배지를 보여준다. 축 정의는 `lib/evaluationAxes.js`가 SSOT (POPUP
+  Studio 인재기준 문서의 방법론만 차용). 추천 랭킹 계산에도 쓰이지만 그건 서버 내부 로직일 뿐,
+  실무진 화면에 점수 자체가 보이지는 않는다.
 - **패스 사유는 선택 + 무제한** — 패스하면 사유 칩이 뜨지만 자동으로 닫히지 않는다. 칩을 고르거나
   "건너뛰기"를 눌러야만 닫힌다.
 - **수퍼라이크** — 한 줄 사유를 남기면 "왜 이 사람인가"가 HR 추천 화면에 그대로 노출되고,
   스코어와 무관하게 패스트트랙으로 상단에 고정된다.
-- **HR 추천** — `직무별` 좋아요/수퍼라이크 태그 빈도로 만든 선호 프로필과 후보 태그를 매칭해
-  스코어를 매긴다. 각 후보 카드에는 좋아요한 실무진 명단과 수퍼라이크 사유가 근거로 붙는다.
+- **HR 추천** — `직무별` 좋아요/수퍼라이크가 반응한 평가 축 빈도로 만든 선호 프로필과 후보의
+  고득점 축을 매칭해 스코어를 매긴다. 각 후보 카드에는 좋아요한 실무진 명단과 수퍼라이크 사유가
+  근거로 붙는다.
 - **기록 탭** — 모든 판단이 append-only로 SWIPE_LOG에 쌓이고 시각순으로 조회할 수 있다.
 - **컨택 진행** — HR이 후보를 컨택하면 `contacted_at`이 DB에 기록되어, 서버를 재시작해도
   "컨택 완료" 상태가 유지된다.
+- **HR 인사이트 패널** — 직무별로 실무진이 실제로 반응한 직무 특화 축 TOP 2, 공통 역량 축 TOP 3,
+  가장 흔한 패스 사유 TOP 3를 추천 화면 상단에 보여준다.
+- **이달의 인재 스카우터** — 실무진별 Super Like 대비 실제 합격(`hired_status = HIRED`) 전환율을
+  랭킹으로 보여준다.
+- **Super Like 알림 피드** — HR 화면 상단에 직무 전체 기준 최근 Super Like 5건이 사유와 함께 노출된다.
+- **잠재력 신호 배지 (HR 화면 전용)** — 연차는 낮지만 공통 역량 축에서 70점 이상인 게 2개 이상인
+  후보에 HR 상세 화면에서 배지를 달아, HR이 연차만 보고 지나치지 않게 한다
+  ("도메인 경력은 가점이 아니다" 철학 반영).
+- **최종 결정 체크리스트** — 컨택 진행 전 포지션 적합성/기여도/대체불가능성/직무 적합성/ROI/충성도
+  6문항을 체크하고 메모를 남긴다.
+- **채용 페르소나 리빌** — 실무진이 자기 직무 후보를 전부 판단하면, 좋아요·수퍼라이크한 후보들의
+  고득점 평가 축으로 "완주형 문제 해결력 헌터" 같은 페르소나 타이틀을 만들어 보여준다. 버튼을 눌러야
+  리빌되고 막대바가 순서대로 차오르는 연출로 성취감을 살렸다.
 
 ## 추천 스코어링 (의사코드)
 
 ```
+매칭 어휘 = 후보의 평가 축 중 65점 이상인 것의 라벨 (scope='persona'만 — 예: "문제 해결력")
+
 prefProfile(personaId):
-  각 태그의 가중치 = 그 직무에서 해당 태그를 가진 후보에게 쌓인
-                     (LIKE=1점, SUPER_LIKE=3점, PASS=0점)의 합
+  각 매칭 어휘의 가중치 = 그 직무에서 해당 어휘를 가진 후보에게 쌓인
+                        (LIKE=1점, SUPER_LIKE=3점, PASS=0점)의 합
 
 scoreOf(candidate, profile):
-  candidate.tags 각각의 profile 가중치를 합산
+  candidate의 매칭 어휘 각각의 profile 가중치를 합산
 
 정렬 순서:
   1. 수퍼라이크(패스트트랙) 여부 — 있으면 최상단, ★ 표시
@@ -103,19 +142,28 @@ scoreOf(candidate, profile):
   3. candidate_id
 ```
 
+공통 역량 축(scope='common')도 같은 방식으로 별도 집계해 HR 인사이트 패널의 "선호 공통 역량"에
+쓴다 — 이쪽은 추천 순위 계산에는 들어가지 않는다.
+
 ## 데이터 모델
 
-`04_data_model.md`를 그대로 옮겼다 (컬럼명만 SQL 관례에 맞게 snake_case):
+`04_data_model.md`를 기반으로 하되, `candidate.tags`/`signal_tags`는 `axis_scores`로 교체했다
+(컬럼명은 SQL 관례에 맞게 snake_case):
 
 - **persona** — 채용 직무 단위 (`dev` / `edu` / `sales`)
-- **employee** — 스와이프하는 실무진. `persona_id`가 접근 가능한 채용을 고정한다
-- **candidate** — 지원자 카드. `metrics` / `career` / `tags` / `signal_tags`는 JSON 컬럼
+- **employee** — 스와이프하는 실무진. `persona_id`가 접근 가능한 채용을 고정하고, `pin_hash`로
+  로그인한다
+- **candidate** — 지원자 카드. `metrics` / `career` / `skills` / `certifications` / `axis_scores`는
+  JSON 컬럼. `skills`/`certifications`/`career`(경력 타임라인+주요 프로젝트)/`education`은 실무진
+  스와이프 카드에도 노출되는 "이력서 원문" 데이터, `metrics`/`axis_scores`는 HR 화면 전용이다.
+  `axis_scores`는 `[{id, label, weight, score, scope}, ...]` 형태 — `scope`는 `persona`(직무
+  특화 2개) 또는 `common`(공통 4개)
 - **swipe_log** — 모든 판단의 원천 기록. append-only, `pass_reason`만 사후 PATCH로 채워진다
+- **decision_log** — HR 최종 결정 체크리스트 (컨택 전 6문항 + 메모), append-only
 
 ## 만들지 않은 것
 
 - 지원자 화면 (실무진/HR 전용 내부 툴)
 - 실제 이력서 파싱/AI — 지원자 데이터는 목업 시드
 - 실제 이메일 발송 — "메일 발송" 토스트는 시뮬레이션
-- 로그인/인증 — 실무진 선택은 셀렉트 박스로 신원을 바꾸는 데모용 스위처
 - 파티 모드(SWIPE_SESSION) — 스키마에 `session_id` 컬럼만 남겨뒀다
