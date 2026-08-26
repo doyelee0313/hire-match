@@ -66,6 +66,7 @@ BASE_URL=http://localhost:3000 npm run smoke
 | `POST /api/swipes` | 스와이프 기록 `{ employeeId, candidateId, action, superLikeReason? }` — `persona_id`는 서버가 employee 레코드로 직접 채워서, 클라이언트 조작으로 다른 직무를 판단할 수 없다 |
 | `PATCH /api/swipes/:id` | 패스 사유를 나중에(시간 제한 없이) 붙인다 `{ passReason }` |
 | `GET /api/recommendations?personaId=` | 태그 기반 스코어 + 수퍼라이크 패스트트랙 + "누가 왜 좋아했는지" |
+| `GET /api/leaderboard?personaId=` | 실무진별 Super Like 적중률(안목 랭킹) |
 | `GET /api/logs?personaId=` | SWIPE_LOG 테이블 뷰 |
 | `POST /api/candidates/:id/contact` | HR "컨택 진행" — `contacted_at`을 DB에 영구 기록 |
 
@@ -83,6 +84,10 @@ BASE_URL=http://localhost:3000 npm run smoke
   스코어와 무관하게 패스트트랙으로 상단에 고정된다.
 - **HR 추천** — `직무별` 좋아요/수퍼라이크 태그 빈도로 만든 선호 프로필과 후보 태그를 매칭해
   스코어를 매긴다. 각 후보 카드에는 좋아요한 실무진 명단과 수퍼라이크 사유가 근거로 붙는다.
+- **안목 랭킹** — 실무진별 Super Like 적중률(HR 화면 "안목" 탭). 적중률 = `hired / (hired + rejected)`이고,
+  아직 결과가 안 나온(`PENDING`) 픽은 분모에서 제외한다 — 판정이 안 났을 뿐인 픽을 실패로 세지 않기
+  위해서다. 결정된 판단이 하나도 없는 실무진은 순위 없이 "판정 대기"로만 뜨고, 적중률 최상위 1명에게만
+  "이달의 인재 스카우터" 배지가 붙는다.
 - **기록 탭** — 모든 판단이 append-only로 SWIPE_LOG에 쌓이고 시각순으로 조회할 수 있다.
 - **컨택 진행** — HR이 후보를 컨택하면 `contacted_at`이 DB에 기록되어, 서버를 재시작해도
   "컨택 완료" 상태가 유지된다.

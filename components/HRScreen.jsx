@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import RecommendationList from './RecommendationList';
 import SwipeLogTable from './SwipeLogTable';
+import Leaderboard from './Leaderboard';
 
 export default function HRScreen({ personas, onToast }) {
   const [hrPersona, setHrPersona] = useState(personas[0]?.id || null);
@@ -25,15 +26,16 @@ export default function HRScreen({ personas, onToast }) {
         </div>
         <div className="seg ghost" role="group" aria-label="보기">
           <button type="button" aria-pressed={hrTab === 'rec'} onClick={() => setHrTab('rec')}>추천</button>
+          <button type="button" aria-pressed={hrTab === 'board'} onClick={() => setHrTab('board')}>안목</button>
           <button type="button" aria-pressed={hrTab === 'log'} onClick={() => setHrTab('log')}>기록</button>
         </div>
       </div>
 
-      {hrTab === 'rec' ? (
+      {hrTab === 'rec' && (
         <RecommendationList personaId={hrPersona} selectedId={selectedId} onSelect={setSelectedId} onToast={onToast} />
-      ) : (
-        <SwipeLogTable personaId={hrPersona} />
       )}
+      {hrTab === 'board' && <Leaderboard personaId={hrPersona} />}
+      {hrTab === 'log' && <SwipeLogTable personaId={hrPersona} />}
     </div>
   );
 }
