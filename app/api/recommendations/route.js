@@ -10,7 +10,8 @@ export async function GET(request) {
     if (!personaId) return badRequest('personaId가 필요합니다.');
     const scored = repo.recommendations(personaId);
     const insights = repo.personaInsights(personaId);
-    return json({ scored, insights });
+    const recentSuperLikeIds = repo.recentSuperLikeCandidateIds(personaId, 5);
+    return json({ scored, insights, recentSuperLikeIds });
   } catch (err) {
     return serverError(err);
   }

@@ -24,6 +24,7 @@ export default function Leaderboard({ personaId }) {
             <tr>
               <th>순위</th>
               <th>실무진</th>
+              <th>채용 페르소나</th>
               <th>수퍼라이크</th>
               <th>적중</th>
               <th>적중률</th>
@@ -42,6 +43,13 @@ export default function Leaderboard({ personaId }) {
                       <span className="pill xs solid" style={{ marginLeft: 6 }}>
                         ★ 이달의 인재 스카우터
                       </span>
+                    )}
+                  </td>
+                  <td>
+                    {row.personaTitle ? (
+                      <span className="pill line">{row.personaTitle}</span>
+                    ) : (
+                      <span className="cap">성향 파악 중</span>
                     )}
                   </td>
                   <td className="num">{row.superLikes}</td>

@@ -242,26 +242,17 @@ function personaInsights(personaId) {
   };
 }
 
-/** 직무 전체 기준 최근 Super Like N건 (HR 알림 피드). */
-function recentSuperLikes(personaId, limit) {
+/** 직무 전체 기준 최근 Super Like된 후보 ID들 (최신순, 중복 제거) — 추천 리스트 행에 "최근" 배지로만 표시. */
+function recentSuperLikeCandidateIds(personaId, limit) {
   const db = getDb();
   const rows = db
     .prepare(
-      `SELECT sl.id, sl.super_like_reason, sl.created_at, e.name AS emp_name, c.name AS cand_name
-       FROM swipe_log sl
-       JOIN employee e ON e.id = sl.employee_id
-       JOIN candidate c ON c.id = sl.candidate_id
-       WHERE sl.persona_id = ? AND sl.action = 'SUPER_LIKE'
-       ORDER BY sl.created_at DESC LIMIT ?`
+      `SELECT candidate_id, MAX(created_at) AS latest FROM swipe_log
+       WHERE persona_id = ? AND action = 'SUPER_LIKE'
+       GROUP BY candidate_id ORDER BY latest DESC LIMIT ?`
     )
     .all(personaId, limit);
-  return rows.map((r) => ({
-    id: r.id,
-    employeeName: r.emp_name,
-    candidateName: r.cand_name,
-    reason: r.super_like_reason,
-    createdAt: r.created_at,
-  }));
+  return rows.map((r) => r.candidate_id);
 }
 
 function rowToDecision(row) {
@@ -478,6 +469,8 @@ function leaderboard(personaId) {
   const board = employees.map((employee) => {
     const s = stats[employee.id];
     const decided = s.hired + s.rejected;
+    // 자기 직무 후보를 전부 판단해야 "채용 페르소나"가 완성된 것으로 본다 (PersonaReveal과 동일 기준).
+    const personaComplete = deckFor(personaId, employee.id).length === 0;
     return {
       employee,
       superLikes: s.superLikes,
@@ -486,6 +479,7 @@ function leaderboard(personaId) {
       pending: s.pending,
       decided,
       accuracy: decided > 0 ? s.hired / decided : null,
+      personaTitle: personaComplete ? employeeTasteProfile(employee.id).title : null,
     };
   });
 
@@ -525,7 +519,7 @@ module.exports = {
   signalProfile,
   employeeTasteProfile,
   personaInsights,
-  recentSuperLikes,
+  recentSuperLikeCandidateIds,
   getDecision,
   saveDecision,
 };

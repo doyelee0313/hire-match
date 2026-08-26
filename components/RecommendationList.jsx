@@ -8,6 +8,7 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
   if (!data) return null;
 
   const scored = data.scored;
+  const recentIds = new Set(data.recentSuperLikeIds || []);
   const supers = scored.filter((s) => s.superd).length;
   const sel = selectedId ? scored.find((s) => s.candidate.id === selectedId) : null;
 
@@ -29,6 +30,7 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
               <span className="nm">
                 {s.candidate.name}
                 {s.superd && <span className="pill xs solid">패스트트랙</span>}
+                {recentIds.has(s.candidate.id) && <span className="pill xs grey">최근 Super Like</span>}
                 {s.candidate.contactedAt && <span className="pill xs grey">컨택 완료</span>}
               </span>
               <span className="sub">{s.candidate.headline} · {s.candidate.oneLiner}</span>

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import RecommendationList from './RecommendationList';
 import SwipeLogTable from './SwipeLogTable';
 import InsightPanel from './InsightPanel';
-import SuperLikeFeed from './SuperLikeFeed';
 import Leaderboard from './Leaderboard';
 
 export default function HRScreen({ personas, onToast }) {
@@ -32,8 +31,6 @@ export default function HRScreen({ personas, onToast }) {
           <button type="button" aria-pressed={hrTab === 'log'} onClick={() => setHrTab('log')}>기록</button>
         </div>
       </div>
-
-      <SuperLikeFeed personaId={hrPersona} />
 
       {hrTab === 'rec' && (
         <div className="stack g24">
