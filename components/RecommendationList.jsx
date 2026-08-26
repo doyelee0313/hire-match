@@ -19,7 +19,7 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
           <button
             key={s.candidate.id}
             type="button"
-            className="recrow"
+            className={`recrow${s.superd ? ' superd' : ''}`}
             aria-current={selectedId === s.candidate.id}
             onClick={() => onSelect(s.candidate.id)}
           >

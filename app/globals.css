@@ -88,6 +88,7 @@ select.picker{
 .full{width:100%;}
 
 .card{background:var(--white); border:1px solid var(--border-sub); border-radius:var(--r-2xl); box-shadow:var(--sh-lg);}
+.card.superd{border-color:#d4af37;}
 .pad{padding:24px;}
 
 .pill{
@@ -258,6 +259,8 @@ select.picker{
 }
 .recrow:hover{border-color:var(--blue); box-shadow:var(--sh-md);}
 .recrow[aria-current="true"]{border-color:var(--blue); box-shadow:var(--sh-md); background:var(--hero);}
+.recrow.superd{border-color:#d4af37;}
+.recrow.superd[aria-current="true"]{border-color:#d4af37; background:var(--hero);}
 .recrow .rk{font-size:14px; font-weight:600; color:var(--muted); text-align:center;}
 .recrow .rk.star{color:var(--blue); font-size:16px;}
 .recrow .nm{display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:var(--heading);}

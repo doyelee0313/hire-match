@@ -11,7 +11,7 @@ import { hasHiddenPotential } from '../lib/signalAxis';
 const GATE_KEYS = ['positionFit', 'contribution', 'irreplaceable', 'roleFit', 'roiOk', 'loyaltyOk'];
 
 export default function CandidateDetail({ scored, onToast, onContacted }) {
-  const { candidate: c, voters, passReasonCounts, decision } = scored;
+  const { candidate: c, voters, passReasonCounts, decision, superd } = scored;
   const [contactedAt, setContactedAt] = useState(c.contactedAt);
   const [submitting, setSubmitting] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -38,7 +38,7 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
   const passedGates = decision ? GATE_KEYS.filter((k) => decision[k]).length : 0;
 
   return (
-    <div className="card stack detailcard">
+    <div className={`card stack detailcard${superd ? ' superd' : ''}`}>
       <div className="chead">
         <div className="row spread g8">
           <span className="code num">{c.name}</span>
