@@ -58,6 +58,13 @@ function openDb() {
     db.exec('ALTER TABLE employee ADD COLUMN pin_hash TEXT');
   }
 
+  // candidate.channel도 같은 이유로 기존 DB에는 없을 수 있다. axis_scores 마이그레이션과 달리
+  // channel은 순수 추가 컬럼(기존 데이터 손실 없음)이라 드롭 없이 ALTER로 붙인다.
+  const candidateColsNow = db.prepare('PRAGMA table_info(candidate)').all().map((c) => c.name);
+  if (!candidateColsNow.includes('channel')) {
+    db.exec('ALTER TABLE candidate ADD COLUMN channel TEXT');
+  }
+
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM persona').get();
   if (n === 0) {
     const counts = seedAll(db);

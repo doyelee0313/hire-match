@@ -452,6 +452,28 @@ const CANDIDATES = [
     '부천대학교 유통물류과',''),
 ];
 
+/* 유입 채널 배정 — dev/edu는 실데이터가 없어 균등 라운드로빈으로 채운다(인사이트 패널 데모용).
+   sales는 해커톤 제공 데이터의 "접수량과 반응률이 비례하지 않는다" 패턴을 재현하도록
+   의도적으로 배정했다: 그룹바이(최소 접수)에 최상위 후보, 원픽-잡코리아(다량 접수)에 약한 후보. */
+const CHANNELS = ['원티드', '잡코리아', '원픽-잡코리아', '링크드인', '사람인', '그룹바이'];
+const SALES_CHANNELS = {
+  'S-068': '그룹바이', 'S-129': '원티드', 'S-032': '링크드인', 'S-104': '원티드',
+  'S-077': '원티드', 'S-065': '잡코리아', 'S-142': '원티드', 'S-141': '원픽-잡코리아',
+  'S-055': '원티드', 'S-003': '사람인', 'S-070': '원티드', 'S-080': '원티드',
+  'S-083': '링크드인', 'S-103': '원티드', 'S-001': '원픽-잡코리아', 'S-002': '잡코리아',
+  'S-074': '원티드', 'S-011': '사람인', 'S-073': '원티드', 'S-005': '그룹바이',
+};
+const roundRobinCount = {};
+for (const cand of CANDIDATES) {
+  if (SALES_CHANNELS[cand.candidate_id]) {
+    cand.channel = SALES_CHANNELS[cand.candidate_id];
+  } else {
+    const i = roundRobinCount[cand.persona_id] || 0;
+    cand.channel = CHANNELS[i % CHANNELS.length];
+    roundRobinCount[cand.persona_id] = i + 1;
+  }
+}
+
 function daysAgo(d, h, m){
   const t = new Date();
   t.setDate(t.getDate() - d); t.setHours(h, m||0, 0, 0);
@@ -474,65 +496,65 @@ const SEED_LOGS = [
   L('dev','e01','D-02','LIKE',null,null,5,12,26),
   L('dev','e01','D-09','LIKE',null,null,3,18,12),
   L('dev','e01','D-11','LIKE',null,null,3,18,14),
-  L('dev','e01','D-05','PASS','정보 부족',null,5,12,27),
-  L('dev','e01','D-08','PASS','직무 불일치',null,5,12,29),
-  L('dev','e01','D-10','PASS','경력 부족',null,3,18,15),
+  L('dev','e01','D-05','PASS','불합격 - 경력/역량 부족',null,5,12,27),
+  L('dev','e01','D-08','PASS','불합격 - 회사/지원자 FIT',null,5,12,29),
+  L('dev','e01','D-10','PASS','불합격 - 경력/역량 부족',null,3,18,15),
   L('dev','e02','D-04','LIKE',null,null,5,12,23),
   L('dev','e02','D-01','LIKE',null,null,5,12,25),
   L('dev','e02','D-03','LIKE',null,null,5,12,28),
   L('dev','e02','D-09','LIKE',null,null,2,13,5),
   L('dev','e02','D-12','LIKE',null,null,2,13,7),
-  L('dev','e02','D-05','PASS','정보 부족',null,5,12,30),
-  L('dev','e02','D-06','PASS','경력 부족',null,5,12,32),
-  L('dev','e02','D-10','PASS','경력 부족',null,2,13,8),
+  L('dev','e02','D-05','PASS','불합격 - 경력/역량 부족',null,5,12,30),
+  L('dev','e02','D-06','PASS','불합격 - 경력/역량 부족',null,5,12,32),
+  L('dev','e02','D-10','PASS','불합격 - 경력/역량 부족',null,2,13,8),
   L('dev','e03','D-02','SUPER_LIKE','배포 파이프라인을 혼자 세운 사람은 우리 팀에 지금 없습니다',null,5,12,26),
   L('dev','e03','D-04','LIKE',null,null,5,12,28),
   L('dev','e03','D-07','LIKE',null,null,5,12,31),
   L('dev','e03','D-11','LIKE',null,null,2,17,30),
   L('dev','e03','D-12','LIKE',null,null,2,17,32),
-  L('dev','e03','D-08','PASS','정보 부족',null,5,12,33),
+  L('dev','e03','D-08','PASS','불합격 - 회사/지원자 FIT',null,5,12,33),
   L('dev','e04','D-01','LIKE',null,null,5,12,27),
   L('dev','e04','D-04','LIKE',null,null,5,12,29),
   L('dev','e04','D-09','LIKE',null,null,5,12,34),
   L('dev','e04','D-07','LIKE',null,null,1,11,20),
   L('dev','e04','D-05','SUPER_LIKE','연차가 가장 높습니다',null,5,12,36),
-  L('dev','e04','D-10','PASS','경력 부족',null,5,12,38),
-  L('dev','e04','D-03','PASS','직무 불일치',null,1,11,22),
+  L('dev','e04','D-10','PASS','불합격 - 경력/역량 부족',null,5,12,38),
+  L('dev','e04','D-03','PASS','불합격 - 경력/역량 부족',null,1,11,22),
   L('dev','e04','D-08','PASS',null,null,1,11,23),
 
   /* 교육 기획자 */
   L('edu','e05','E-02','SUPER_LIKE','강사와 고객사 사이를 조율한 구체적 프로세스가 있습니다',null,12,10,15),
   L('edu','e05','E-01','SUPER_LIKE','커리큘럼을 0에서 만들어 12기까지 끌고 간 사람은 드뭅니다',null,4,14,10),
   L('edu','e05','E-03','LIKE',null,null,4,14,12),
-  L('edu','e05','E-05','PASS','정보 부족',null,4,14,13),
-  L('edu','e05','E-11','PASS','직무 불일치',null,4,14,15),
+  L('edu','e05','E-05','PASS','불합격 - 허수 지원',null,4,14,13),
+  L('edu','e05','E-11','PASS','불합격 - 회사/지원자 FIT',null,4,14,15),
   L('edu','e06','E-02','SUPER_LIKE','재계약률 92%는 운영이 아니라 설계를 했다는 증거입니다',null,12,11,5),
   L('edu','e06','E-01','LIKE',null,null,3,15,40),
   L('edu','e06','E-06','LIKE',null,null,3,15,42),
   L('edu','e06','E-12','LIKE',null,null,3,15,44),
-  L('edu','e06','E-08','PASS','직무 불일치',null,3,15,45),
+  L('edu','e06','E-08','PASS','불합격 - 경력/역량 부족',null,3,15,45),
   L('edu','e07','E-05','SUPER_LIKE','운영 경력이 길어서 바로 투입 가능해 보입니다',null,11,16,20),
   L('edu','e07','E-03','LIKE',null,null,2,10,30),
   L('edu','e07','E-07','LIKE',null,null,2,10,32),
   L('edu','e07','E-10','LIKE',null,null,2,10,34),
-  L('edu','e07','E-11','PASS','정보 부족',null,2,10,35),
+  L('edu','e07','E-11','PASS','불합격 - 회사/지원자 FIT',null,2,10,35),
 
   /* B2B 세일즈 — 실제 채용 사이클 표본 20건 기준 */
   L('sales','e08','S-068','SUPER_LIKE','B2B 매출을 7배로 키운 사람을 지금 팀에 데려오고 싶습니다',null,4,17,10),
   L('sales','e08','S-129','SUPER_LIKE','C-Level 세일즈로 담당 매출을 9억에서 18억까지 만든 경험이 결정적입니다',null,14,9,30),
   L('sales','e08','S-032','LIKE',null,null,4,17,12),
-  L('sales','e08','S-001','PASS','직무 불일치',null,4,17,13),
-  L('sales','e08','S-002','PASS','경력 부족',null,4,17,15),
+  L('sales','e08','S-001','PASS','불합격 - 허수 지원',null,4,17,13),
+  L('sales','e08','S-002','PASS','불합격 - 경력/역량 부족',null,4,17,15),
   L('sales','e09','S-032','SUPER_LIKE','25개 부서를 전수조사해 통합 계약으로 묶은 구조화 능력이 필요합니다',null,14,10,5),
   L('sales','e09','S-068','LIKE',null,null,3,12,40),
   L('sales','e09','S-104','LIKE',null,null,3,12,42),
   L('sales','e09','S-142','LIKE',null,null,3,12,44),
-  L('sales','e09','S-011','PASS','직무 불일치',null,3,12,45),
+  L('sales','e09','S-011','PASS','불합격 - 허수 지원',null,3,12,45),
   L('sales','e10','S-129','SUPER_LIKE','5년 연속 담당 매출을 두 배로 키운 근거가 명확합니다',null,10,14,20),
   L('sales','e10','S-077','LIKE',null,null,2,16,10),
   L('sales','e10','S-055','LIKE',null,null,2,16,12),
   L('sales','e10','S-083','LIKE',null,null,2,16,14),
-  L('sales','e10','S-005','PASS','정보 부족',null,2,16,16),
+  L('sales','e10','S-005','PASS','불합격 - 기타',null,2,16,16),
 ];
 
 module.exports = { PASS_REASONS, PERSONAS, EMPLOYEES, CANDIDATES, SEED_LOGS };

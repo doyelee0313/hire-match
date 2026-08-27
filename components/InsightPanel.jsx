@@ -7,8 +7,9 @@ export default function InsightPanel({ personaId }) {
   const { data } = useSWR(personaId ? `/api/recommendations?personaId=${personaId}` : null, fetcher);
   if (!data) return null;
 
-  const { topTags, topSignalTags, passReasons } = data.insights;
-  if (!topTags.length && !topSignalTags.length && !passReasons.length) {
+  const { topTags, topSignalTags, passReasons, channels } = data.insights;
+  const reactedChannels = (channels || []).filter((c) => c.candidates > 0);
+  if (!topTags.length && !topSignalTags.length && !passReasons.length && !reactedChannels.length) {
     return (
       <div className="card pad stack g8">
         <span className="micro muted">HR 인사이트</span>
@@ -49,6 +50,23 @@ export default function InsightPanel({ personaId }) {
           <div className="row wrapr g6">
             {passReasons.map(({ reason, count }) => (
               <span className="pill grey" key={reason}>{reason} · {count}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reactedChannels.length > 0 && (
+        <div>
+          <span className="sec">채널별 반응률 <span className="cap">· 접수량과 반응률은 비례하지 않을 수 있습니다</span></span>
+          <div className="stack g6">
+            {reactedChannels.map((c) => (
+              <div className="row spread g8" key={c.channel}>
+                <span className="label">{c.channel}</span>
+                <span className="cap">
+                  {c.candidates}건 접수 · {c.reacted}건 반응
+                  <b className="num" style={{ marginLeft: 6 }}>{Math.round(c.reactRate * 100)}%</b>
+                </span>
+              </div>
             ))}
           </div>
         </div>
