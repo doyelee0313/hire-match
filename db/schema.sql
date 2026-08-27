@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS candidate (
   skills              TEXT NOT NULL, -- JSON: string[] — 이력서에 명시된 보유 기술 (실무진 카드에 노출)
   certifications      TEXT NOT NULL, -- JSON: string[] — 자격증, 없으면 빈 배열
   axis_scores         TEXT NOT NULL, -- JSON: [{id,label,weight,score,scope:'persona'|'common'}, ...] — lib/evaluationAxes.js가 SSOT, HR 화면 전용
+  channel             TEXT, -- 유입 채널(원티드/잡코리아/원픽-잡코리아/링크드인/사람인/그룹바이). 스와이프 카드엔 노출하지 않는다 —
+                             -- 채널은 개별 판정의 사전 정보가 아니라 사이클 종료 후 채널 운영을 검토할 때만 쓰는 값이라, HR 인사이트 집계 전용으로 둔다.
   education           TEXT NOT NULL,
   portfolio_url       TEXT,
   hired_status        TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | HIRED | REJECTED

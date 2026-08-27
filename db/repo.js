@@ -35,6 +35,7 @@ function rowToCandidate(row) {
     certifications: JSON.parse(row.certifications),
     axisScores,
     fitScore: fitScore(axisScores),
+    channel: row.channel,
     education: row.education,
     portfolioUrl: row.portfolio_url,
     hiredStatus: row.hired_status,
@@ -233,12 +234,40 @@ function passReasonBreakdownForPersona(personaId) {
   return rows.map((r) => ({ reason: r.pass_reason, count: r.n }));
 }
 
-/** HR 인사이트 패널 — 이 직무에서 실무진이 실제로 반응한 태그/강점신호/패스 사유. */
+/**
+ * 채널별 반응률(HR 인사이트 전용) — 접수 채널은 개별 판정의 사전 정보로 쓰지 않지만,
+ * 사이클이 쌓인 뒤 "어느 채널이 실제로 반응 좋은 후보를 데려왔는가"를 되짚어보는 용도.
+ * 스와이프 카드에는 노출하지 않는다(db/schema.sql의 channel 컬럼 주석 참고).
+ */
+function channelInsights(personaId) {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT c.channel AS channel,
+              COUNT(DISTINCT c.id) AS candidates,
+              COUNT(DISTINCT CASE WHEN sl.action IN ('LIKE','SUPER_LIKE') THEN c.id END) AS reacted
+       FROM candidate c
+       LEFT JOIN swipe_log sl ON sl.candidate_id = c.id
+       WHERE c.persona_id = ? AND c.channel IS NOT NULL
+       GROUP BY c.channel
+       ORDER BY candidates DESC`
+    )
+    .all(personaId);
+  return rows.map((r) => ({
+    channel: r.channel,
+    candidates: r.candidates,
+    reacted: r.reacted,
+    reactRate: r.candidates ? r.reacted / r.candidates : 0,
+  }));
+}
+
+/** HR 인사이트 패널 — 이 직무에서 실무진이 실제로 반응한 태그/강점신호/패스 사유/채널. */
 function personaInsights(personaId) {
   return {
     topTags: topEntries(prefProfile(personaId), 5),
     topSignalTags: topEntries(signalProfile(personaId), 3),
     passReasons: passReasonBreakdownForPersona(personaId).slice(0, 3),
+    channels: channelInsights(personaId),
   };
 }
 
