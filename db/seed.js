@@ -15,8 +15,8 @@ function seedAll(db) {
   const insertCandidate = db.prepare(`
     INSERT INTO candidate
       (id, persona_id, name, headline, one_liner, years_of_experience,
-       metrics, career, skills, certifications, axis_scores, education, portfolio_url, hired_status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       metrics, career, skills, certifications, axis_scores, channel, education, portfolio_url, hired_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertLog = db.prepare(`
     INSERT INTO swipe_log
@@ -36,7 +36,7 @@ function seedAll(db) {
         c.candidate_id, c.persona_id, c.name, c.headline, c.one_liner, c.years_of_experience,
         JSON.stringify(c.metrics), JSON.stringify(c.career),
         JSON.stringify(c.skills), JSON.stringify(c.certifications), JSON.stringify(c.axis_scores),
-        c.education, c.portfolio_url || null,
+        c.channel || null, c.education, c.portfolio_url || null,
         c.hired_status || 'PENDING'
       );
     }
