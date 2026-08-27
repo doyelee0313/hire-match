@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS candidate (
   career              TEXT NOT NULL, -- JSON: [{org,role,period,bullets:[]}, ...] — 경력 타임라인 + 주요 프로젝트
   skills              TEXT NOT NULL, -- JSON: string[] — 이력서에 명시된 보유 기술 (실무진 카드에 노출)
   certifications      TEXT NOT NULL, -- JSON: string[] — 자격증, 없으면 빈 배열
+  cover_letter        TEXT NOT NULL, -- JSON: {motivation, experience} — 자기소개서(지원 동기·주요 경험)
   axis_scores         TEXT NOT NULL, -- JSON: [{id,label,weight,score,scope:'persona'|'common'}, ...] — lib/evaluationAxes.js가 SSOT, HR 화면 전용
   education           TEXT NOT NULL,
   portfolio_url       TEXT,

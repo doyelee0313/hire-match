@@ -40,7 +40,7 @@ function openDb() {
   // candidate가 구 스키마(axis_scores/skills/certifications 이전)라면 컬럼을 이어 붙일 방법이
   // 없다 — 전체를 지우고 최신 스키마로 다시 시딩한다.
   const candidateCols = db.prepare('PRAGMA table_info(candidate)').all().map((c) => c.name);
-  if (candidateCols.length && (!candidateCols.includes('axis_scores') || !candidateCols.includes('skills'))) {
+  if (candidateCols.length && (!candidateCols.includes('axis_scores') || !candidateCols.includes('skills') || !candidateCols.includes('cover_letter'))) {
     db.exec(`
       DROP TABLE IF EXISTS decision_log;
       DROP TABLE IF EXISTS swipe_log;

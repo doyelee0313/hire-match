@@ -33,6 +33,7 @@ function rowToCandidate(row) {
     career: JSON.parse(row.career),
     skills: JSON.parse(row.skills),
     certifications: JSON.parse(row.certifications),
+    coverLetter: JSON.parse(row.cover_letter),
     axisScores,
     fitScore: fitScore(axisScores),
     education: row.education,
@@ -157,6 +158,10 @@ function signalProfile(personaId) {
   }
   return profile;
 }
+
+// 이 이상 판단해야 "채용 페르소나"를 HR에게 보여줄 만큼 신뢰할 만하다고 본다.
+// 덱을 다 비워야 하는 게 아니라, 스와이프한 만큼 실시간으로 갱신되는 값이다.
+const PERSONA_MIN_SWIPES = 3;
 
 // 실무진 개인 취향 페르소나 타이틀 생성용 — 공통 평가 축 4종을 짧은 형용사로 매핑.
 const SIGNAL_ADJ = {
@@ -320,14 +325,20 @@ function votersOf(candidateId) {
         (a.action === 'SUPER_LIKE' ? 0 : 1) - (b.action === 'SUPER_LIKE' ? 0 : 1) ||
         new Date(b.created_at) - new Date(a.created_at)
     )
-    .map((r) => ({
-      employeeId: r.employee_id,
-      employeeName: r.emp_name,
-      employeeRole: r.emp_role,
-      action: r.action,
-      superLikeReason: r.super_like_reason,
-      createdAt: r.created_at,
-    }));
+    .map((r) => {
+      // 이 실무진의 지금까지 채용 페르소나 — HR이 "누가 좋아했는지"를 볼 때 그 사람 취향까지
+      // 같이 참고할 수 있게, 판단 시점(candidate detail 조회 시점)의 최신 상태로 매번 계산한다.
+      const profile = employeeTasteProfile(r.employee_id);
+      return {
+        employeeId: r.employee_id,
+        employeeName: r.emp_name,
+        employeeRole: r.emp_role,
+        action: r.action,
+        superLikeReason: r.super_like_reason,
+        createdAt: r.created_at,
+        voterPersonaTitle: profile.totalSwipes >= PERSONA_MIN_SWIPES ? profile.title : null,
+      };
+    });
 }
 
 function passReasonCounts(candidateId) {
@@ -357,8 +368,11 @@ function recommendations(personaId) {
       decision: getDecision(c.id),
     };
   });
+  // 목록에 보이는 숫자(종합 적합도)와 정렬 기준을 일치시킨다 — 다른 계산식(선호 매칭 score)으로
+  // 정렬하면서 화면엔 종합 적합도를 보여주면, 리스트 순서와 상세에서 본 점수가 서로 안 맞아 보인다.
   scored.sort(
-    (a, b) => (b.superd - a.superd) || (b.score - a.score) || a.candidate.id.localeCompare(b.candidate.id)
+    (a, b) =>
+      (b.superd - a.superd) || (b.candidate.fitScore - a.candidate.fitScore) || a.candidate.id.localeCompare(b.candidate.id)
   );
   return scored;
 }
@@ -469,8 +483,10 @@ function leaderboard(personaId) {
   const board = employees.map((employee) => {
     const s = stats[employee.id];
     const decided = s.hired + s.rejected;
-    // 자기 직무 후보를 전부 판단해야 "채용 페르소나"가 완성된 것으로 본다 (PersonaReveal과 동일 기준).
-    const personaComplete = deckFor(personaId, employee.id).length === 0;
+    // 채용 페르소나는 덱을 다 비워야 나오는 게 아니라, 스와이프한 만큼 실시간으로 쌓인다 —
+    // 새 지원자가 계속 들어오는 구조라 "덱 완주"는 애초에 완성 기준이 될 수 없다.
+    // PERSONA_MIN_SWIPES건 이상 판단하면 그 시점까지의 성향으로 타이틀을 보여준다.
+    const profile = employeeTasteProfile(employee.id);
     return {
       employee,
       superLikes: s.superLikes,
@@ -479,7 +495,8 @@ function leaderboard(personaId) {
       pending: s.pending,
       decided,
       accuracy: decided > 0 ? s.hired / decided : null,
-      personaTitle: personaComplete ? employeeTasteProfile(employee.id).title : null,
+      personaTitle: profile.totalSwipes >= PERSONA_MIN_SWIPES ? profile.title : null,
+      personaSwipes: profile.totalSwipes,
     };
   });
 

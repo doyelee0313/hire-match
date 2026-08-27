@@ -5,8 +5,8 @@ import CareerList from './CareerList';
  * depth 1~2 = 뒤에 살짝 보이는 장식용 카드 (.behind → pointer-events:none).
  *
  * 여기 보이는 건 오로지 이력서에 실제로 있는 내용(헤드라인·한 줄 소개·경력 타임라인·주요 프로젝트·
- * 보유 기술·자격증·학력)뿐이다. 정량 지표, 평가 축 점수·종합 적합도 같은 회사 자체 재가공 수치는
- * 실무진 스와이프 화면엔 절대 노출하지 않고, HR 화면(CandidateDetail)에서만 보여준다.
+ * 보유 기술·자격증·자기소개서·학력)뿐이다. 정량 지표, 평가 축 점수·종합 적합도 같은 회사 자체
+ * 재가공 수치는 실무진 스와이프 화면엔 절대 노출하지 않고, HR 화면(CandidateDetail)에서만 보여준다.
  */
 export default function SwipeCard({ candidate: cand, depth, personaShort, cardRef }) {
   const behind = depth > 0;
@@ -54,6 +54,19 @@ export default function SwipeCard({ candidate: cand, depth, personaShort, cardRe
               </div>
             </div>
           )}
+          <div>
+            <span className="sec">자기소개서</span>
+            <div className="stack g10">
+              <div>
+                <span className="cap">지원 동기</span>
+                <p className="liner" style={{ marginTop: 2 }}>{cand.coverLetter.motivation}</p>
+              </div>
+              <div>
+                <span className="cap">주요 경험</span>
+                <p className="liner" style={{ marginTop: 2 }}>{cand.coverLetter.experience}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

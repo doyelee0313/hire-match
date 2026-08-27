@@ -49,7 +49,7 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
                   : '판단 없음'}
               </span>
             </span>
-            <span className="sc"><b className="num">{s.score}</b><span>SCORE</span></span>
+            <span className="sc"><b className="num">{s.candidate.fitScore}</b><span>종합 적합도</span></span>
           </button>
         ))}
       </div>

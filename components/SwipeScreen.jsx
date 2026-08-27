@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '../lib/fetcher';
 import { postSwipe, patchReason } from '../lib/api';
-import { PASS_REASONS } from '../lib/constants';
+import { PASS_REASONS, PASS_REASON_DETAILS } from '../lib/constants';
 import { esc } from '../lib/format';
 import SwipeCard from './SwipeCard';
 import ReasonPanel from './ReasonPanel';
@@ -206,6 +206,7 @@ export default function SwipeScreen({ employeeId, onToast }) {
             <ReasonPanel
               candidateName={pendingPass.candidate.name}
               reasons={PASS_REASONS}
+              reasonDetails={PASS_REASON_DETAILS}
               onPick={pickReason}
               onSkip={() => setPendingPass(null)}
             />

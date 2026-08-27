@@ -1,5 +1,5 @@
 /** 패스 사유 칩 — 선택 사항이며 시간 제한 없이 열려 있다가, 칩 클릭이나 "건너뛰기"로만 닫힌다. */
-export default function ReasonPanel({ candidateName, reasons, onPick, onSkip }) {
+export default function ReasonPanel({ candidateName, reasons, reasonDetails, onPick, onSkip }) {
   return (
     <div className="reason">
       <div className="row spread g12">
@@ -10,7 +10,7 @@ export default function ReasonPanel({ candidateName, reasons, onPick, onSkip }) 
       </div>
       <div className="chips">
         {reasons.map((r) => (
-          <button type="button" key={r} onClick={() => onPick(r)}>{r}</button>
+          <button type="button" key={r} title={reasonDetails?.[r]} onClick={() => onPick(r)}>{r}</button>
         ))}
       </div>
     </div>

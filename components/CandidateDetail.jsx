@@ -86,6 +86,19 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
               </div>
             </div>
           )}
+          <div>
+            <span className="sec">자기소개서</span>
+            <div className="stack g10">
+              <div>
+                <span className="cap">지원 동기</span>
+                <p className="liner" style={{ marginTop: 2 }}>{c.coverLetter.motivation}</p>
+              </div>
+              <div>
+                <span className="cap">주요 경험</span>
+                <p className="liner" style={{ marginTop: 2 }}>{c.coverLetter.experience}</p>
+              </div>
+            </div>
+          </div>
           <AxisScoreBoard axisScores={c.axisScores} />
           <div>
             <span className="sec">좋아요한 실무진 {voters.length}명</span>
@@ -95,7 +108,10 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
                   <div className={`voter${v.action === 'SUPER_LIKE' ? ' s' : ''}`} key={i}>
                     <span aria-hidden="true" style={{ color: 'var(--blue)' }}>{ACT_ICON[v.action]}</span>
                     <div>
-                      <div className="w">{v.employeeName} · {v.employeeRole}</div>
+                      <div className="w">
+                        {v.employeeName} · {v.employeeRole}
+                        {v.voterPersonaTitle && <span className="pill xs line" style={{ marginLeft: 6 }}>{v.voterPersonaTitle}</span>}
+                      </div>
                       {v.superLikeReason && <div className="q">“{v.superLikeReason}”</div>}
                     </div>
                   </div>

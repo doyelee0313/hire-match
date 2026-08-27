@@ -24,7 +24,7 @@ export default function Leaderboard({ personaId }) {
             <tr>
               <th>순위</th>
               <th>실무진</th>
-              <th>채용 페르소나</th>
+              <th>채용 페르소나 (실시간)</th>
               <th>수퍼라이크</th>
               <th>적중</th>
               <th>적중률</th>
@@ -49,7 +49,7 @@ export default function Leaderboard({ personaId }) {
                     {row.personaTitle ? (
                       <span className="pill line">{row.personaTitle}</span>
                     ) : (
-                      <span className="cap">성향 파악 중</span>
+                      <span className="cap">판단 {row.personaSwipes}건 · 집계 중</span>
                     )}
                   </td>
                   <td className="num">{row.superLikes}</td>
@@ -63,6 +63,7 @@ export default function Leaderboard({ personaId }) {
       </div>
       <p className="cap">
         적중률 = Super Like한 후보 중 최종 합격(HIRED) 비율. 아직 결과가 안 나온(PENDING) 픽은 분모에서 제외합니다.
+        채용 페르소나는 덱을 다 봐야 나오는 게 아니라, 판단 3건부터 스와이프한 만큼 실시간으로 갱신됩니다.
       </p>
     </div>
   );
