@@ -12,6 +12,8 @@ const GATE_KEYS = ['positionFit', 'contribution', 'irreplaceable', 'roleFit', 'r
 
 export default function CandidateDetail({ scored, onToast, onContacted }) {
   const { candidate: c, voters, passReasonCounts, decision, superd } = scored;
+  // 가중치 계산에는 관여하지 않는 표시 전용 카운트 — "몇 명이 확신했는가"를 한눈에 보여주기 위함.
+  const superLikeCount = voters.filter((v) => v.action === 'SUPER_LIKE').length;
   const [contactedAt, setContactedAt] = useState(c.contactedAt);
   const [submitting, setSubmitting] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -46,7 +48,18 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
         </div>
         <span className="name">{c.headline}</span>
         <p className="liner">“{c.oneLiner}”</p>
-        <div className="fit-badge"><b className="num">{c.fitScore}</b><span>종합 적합도</span></div>
+        <div className="row g8" style={{ marginTop: 4 }}>
+          <div className="fit-badge"><b className="num">{c.fitScore}</b><span>종합 적합도</span></div>
+          {superLikeCount > 0 && (
+            <span
+              className="pill gold"
+              style={{ alignSelf: 'flex-start' }}
+              title="점수엔 반영되지 않는 표시 전용 배지입니다"
+            >
+              {'★'.repeat(superLikeCount)} {superLikeCount}명 확신
+            </span>
+          )}
+        </div>
       </div>
       <div className="metrics">
         {c.metrics.map(([v, l], i) => (
