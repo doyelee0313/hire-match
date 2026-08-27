@@ -3,6 +3,10 @@ import useSWR from 'swr';
 import { fetcher } from '../lib/fetcher';
 import CandidateDetail from './CandidateDetail';
 
+function superLikeCountOf(voters) {
+  return voters.filter((v) => v.action === 'SUPER_LIKE').length;
+}
+
 export default function RecommendationList({ personaId, selectedId, onSelect, onToast }) {
   const { data, mutate } = useSWR(personaId ? `/api/recommendations?personaId=${personaId}` : null, fetcher);
   if (!data) return null;
@@ -30,6 +34,11 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
               <span className="nm">
                 {s.candidate.name}
                 {s.superd && <span className="pill xs solid">패스트트랙</span>}
+                {s.superd && (
+                  <span className="pill xs gold" title="이 후보를 Super Like한 실무진 수 — 점수엔 반영 안 됨, 표시 전용">
+                    {'★'.repeat(superLikeCountOf(s.voters))} ×{superLikeCountOf(s.voters)}
+                  </span>
+                )}
                 {recentIds.has(s.candidate.id) && <span className="pill xs grey">최근 Super Like</span>}
                 {s.candidate.contactedAt && <span className="pill xs grey">컨택 완료</span>}
               </span>

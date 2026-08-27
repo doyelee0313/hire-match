@@ -101,6 +101,9 @@ select.picker{
 .pill.solid{background:var(--blue); color:var(--white);}
 .pill.xs{padding:3px 9px; font-size:12px; line-height:14px;}
 .pill.potential{background:var(--blue-deep); color:var(--white);}
+/* .card.superd/.recrow.superd에 이미 쓰는 골드(#d4af37)와 톤을 맞춘 배지 — 슈퍼라이크 "받은 횟수"만 표시,
+   가중치 계산에는 관여하지 않는다 (표시 전용). */
+.pill.gold{background:rgba(212,175,55,.14); color:#8a6a12; border:1px solid #d4af37; font-weight:700;}
 
 .pill.sig{gap:6px;}
 .pill.sig .sigw{font-size:10px; letter-spacing:-1px;}
