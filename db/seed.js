@@ -10,7 +10,7 @@ function seedAll(db) {
     `INSERT INTO persona (id, title, short, department) VALUES (?, ?, ?, ?)`
   );
   const insertEmployee = db.prepare(
-    `INSERT INTO employee (id, name, department, role, persona_id) VALUES (?, ?, ?, ?, ?)`
+    `INSERT INTO employee (id, name, department, role, persona_id, is_lead) VALUES (?, ?, ?, ?, ?, ?)`
   );
   const insertCandidate = db.prepare(`
     INSERT INTO candidate
@@ -29,7 +29,7 @@ function seedAll(db) {
       insertPersona.run(p.persona_id, p.title, p.short, p.department);
     }
     for (const e of EMPLOYEES) {
-      insertEmployee.run(e.employee_id, e.name, e.department, e.role, e.persona_id);
+      insertEmployee.run(e.employee_id, e.name, e.department, e.role, e.persona_id, e.is_lead ? 1 : 0);
     }
     for (const c of CANDIDATES) {
       insertCandidate.run(

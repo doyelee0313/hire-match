@@ -15,7 +15,12 @@ CREATE TABLE IF NOT EXISTS employee (
   department  TEXT NOT NULL,
   role        TEXT NOT NULL,
   persona_id  TEXT NOT NULL REFERENCES persona(id),
-  pin_hash    TEXT -- 로그인용 PIN 해시. 기존 DB 파일에는 없을 수 있어 db/client.js가 부팅 시 마이그레이션한다.
+  pin_hash    TEXT, -- 로그인용 PIN 해시. 기존 DB 파일에는 없을 수 있어 db/client.js가 부팅 시 마이그레이션한다.
+  is_lead     INTEGER NOT NULL DEFAULT 0 -- 리더십 여부(멘토링 피드백 반영: Day6_3_1).
+              -- 리더의 Super Like만 패스트트랙(추천 리스트 상단 고정)으로 작동하고, 그 외 실무진의
+              -- Super Like는 여전히 기록·집계되지만 "참고 신호"로만 표시된다 — 신입/일반 실무진에게
+              -- 면접 프리패스에 준하는 권한을 그대로 주면, 면접 대상자가 늘어나 원래 풀려던 시간
+              -- 병목이 재현되는 자기모순이 생긴다는 지적을 반영.
 );
 CREATE INDEX IF NOT EXISTS idx_employee_persona ON employee(persona_id);
 

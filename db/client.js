@@ -57,6 +57,9 @@ function openDb() {
   if (!employeeCols.includes('pin_hash')) {
     db.exec('ALTER TABLE employee ADD COLUMN pin_hash TEXT');
   }
+  if (!employeeCols.includes('is_lead')) {
+    db.exec('ALTER TABLE employee ADD COLUMN is_lead INTEGER NOT NULL DEFAULT 0');
+  }
 
   // candidate.channel도 같은 이유로 기존 DB에는 없을 수 있다. axis_scores 마이그레이션과 달리
   // channel은 순수 추가 컬럼(기존 데이터 손실 없음)이라 드롭 없이 ALTER로 붙인다.

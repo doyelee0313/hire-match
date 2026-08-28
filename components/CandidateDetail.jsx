@@ -13,7 +13,10 @@ const GATE_KEYS = ['positionFit', 'contribution', 'irreplaceable', 'roleFit', 'r
 export default function CandidateDetail({ scored, onToast, onContacted }) {
   const { candidate: c, voters, passReasonCounts, decision, superd } = scored;
   // 가중치 계산에는 관여하지 않는 표시 전용 카운트 — "몇 명이 확신했는가"를 한눈에 보여주기 위함.
-  const superLikeCount = voters.filter((v) => v.action === 'SUPER_LIKE').length;
+  // 리더/실무진을 나눠 세는 이유는 recommendations()의 패스트트랙 정의(리더 Super Like만)와
+  // 맞추기 위함 — 멘토링 Day6_3_1: 일반 실무진의 Super Like까지 패스트트랙이면 자기모순이 생긴다.
+  const leadSuperLikeCount = voters.filter((v) => v.action === 'SUPER_LIKE' && v.isLead).length;
+  const staffSuperLikeCount = voters.filter((v) => v.action === 'SUPER_LIKE' && !v.isLead).length;
   const [contactedAt, setContactedAt] = useState(c.contactedAt);
   const [submitting, setSubmitting] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -50,13 +53,22 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
         <p className="liner">“{c.oneLiner}”</p>
         <div className="row g8" style={{ marginTop: 4 }}>
           <div className="fit-badge"><b className="num">{c.fitScore}</b><span>종합 적합도</span></div>
-          {superLikeCount > 0 && (
+          {leadSuperLikeCount > 0 && (
             <span
               className="pill gold"
               style={{ alignSelf: 'flex-start' }}
-              title="점수엔 반영되지 않는 표시 전용 배지입니다"
+              title="리더 Super Like — 패스트트랙으로 작동합니다"
             >
-              {'★'.repeat(superLikeCount)} {superLikeCount}명 확신
+              {'★'.repeat(leadSuperLikeCount)} 리더 {leadSuperLikeCount}명 확신
+            </span>
+          )}
+          {staffSuperLikeCount > 0 && (
+            <span
+              className="pill line"
+              style={{ alignSelf: 'flex-start' }}
+              title="실무진 Super Like — 참고 신호일 뿐 패스트트랙에는 반영되지 않습니다"
+            >
+              ☆ 실무진 {staffSuperLikeCount}명 참고
             </span>
           )}
         </div>
@@ -110,6 +122,11 @@ export default function CandidateDetail({ scored, onToast, onContacted }) {
                     <div>
                       <div className="w">
                         {v.employeeName} · {v.employeeRole}
+                        {v.action === 'SUPER_LIKE' && (
+                          <span className={`pill xs ${v.isLead ? 'gold' : 'line'}`} style={{ marginLeft: 6 }}>
+                            {v.isLead ? '★ 리더 확신' : '☆ 실무진 참고'}
+                          </span>
+                        )}
                         {v.voterPersonaTitle && <span className="pill xs line" style={{ marginLeft: 6 }}>{v.voterPersonaTitle}</span>}
                       </div>
                       {v.superLikeReason && <div className="q">“{v.superLikeReason}”</div>}

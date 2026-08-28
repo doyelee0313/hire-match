@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-export default function SuperLikeModal({ candidate, onConfirm, onCancel }) {
+export default function SuperLikeModal({ candidate, isLead, onConfirm, onCancel }) {
   const [reason, setReason] = useState('');
   const inputRef = useRef(null);
 
@@ -13,9 +13,14 @@ export default function SuperLikeModal({ candidate, onConfirm, onCancel }) {
     <div className="scrim" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="smt">
         <div className="stack g8">
-          <span className="pill" style={{ alignSelf: 'flex-start' }}>★ 수퍼라이크</span>
+          <span className={`pill ${isLead ? 'gold' : ''}`} style={{ alignSelf: 'flex-start' }}>
+            {isLead ? '★ 리더 수퍼라이크' : '☆ 수퍼라이크'}
+          </span>
           <h3 id="smt" style={{ marginTop: 4 }}>왜 이 사람인가요?</h3>
-          <p className="label">{candidate.name} · {candidate.headline} · 최종면접 패스트트랙</p>
+          <p className="label">
+            {candidate.name} · {candidate.headline} ·{' '}
+            {isLead ? 'HR 최우선 검토(패스트트랙)' : 'HR 참고 신호 (최종 판단은 HR이 합니다)'}
+          </p>
         </div>
         <input
           ref={inputRef}
