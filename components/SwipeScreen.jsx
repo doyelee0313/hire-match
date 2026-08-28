@@ -62,6 +62,11 @@ export default function SwipeScreen({ employeeId, onToast }) {
     [busy, top, employeeId, mutate, flyOut]
   );
 
+  // 리더의 Super Like만 패스트트랙으로 이어진다(멘토링 Day6_3_1) — 일반 실무진의 Super Like까지
+  // "최종면접 확정"처럼 안내하면, 면접 대상자가 무제한으로 늘어나 시간 병목이 되살아난다.
+  // 그래서 문구도 액션의 실제 효력에 맞게 실무진/리더를 구분해서 보여준다.
+  const isLead = data?.employee?.isLead;
+
   const confirmSuperLike = useCallback(
     (reason) => {
       const cand = superCandidate;
@@ -71,10 +76,14 @@ export default function SwipeScreen({ employeeId, onToast }) {
         await postSwipe({ employeeId, candidateId: cand.id, action: 'SUPER_LIKE', superLikeReason: reason || null });
         await mutate();
         setBusy(false);
-        onToast(`<b>${esc(cand.name)}</b> 최종면접 안내 메일 발송 <span class="muted">(시뮬레이션)</span>`);
+        onToast(
+          isLead
+            ? `<b>${esc(cand.name)}</b> HR에게 최우선 검토 요청을 보냈습니다 <span class="muted">(시뮬레이션)</span>`
+            : `<b>${esc(cand.name)}</b> HR에게 참고 신호로 전달했습니다 <span class="muted">(최종 판단은 HR이 합니다)</span>`
+        );
       }, 280);
     },
-    [superCandidate, employeeId, mutate, flyOut, onToast]
+    [superCandidate, employeeId, mutate, flyOut, onToast, isLead]
   );
 
   const cancelSuperLike = useCallback(() => {
@@ -232,7 +241,7 @@ export default function SwipeScreen({ employeeId, onToast }) {
       </div>
 
       {superCandidate && (
-        <SuperLikeModal candidate={superCandidate} onConfirm={confirmSuperLike} onCancel={cancelSuperLike} />
+        <SuperLikeModal candidate={superCandidate} isLead={isLead} onConfirm={confirmSuperLike} onCancel={cancelSuperLike} />
       )}
     </div>
   );

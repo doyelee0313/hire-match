@@ -3,8 +3,12 @@ import useSWR from 'swr';
 import { fetcher } from '../lib/fetcher';
 import CandidateDetail from './CandidateDetail';
 
-function superLikeCountOf(voters) {
-  return voters.filter((v) => v.action === 'SUPER_LIKE').length;
+// 패스트트랙 배지는 리더 Super Like만 센다 — recommendations()의 superd 정의와 맞춘다.
+function leadSuperLikeCountOf(voters) {
+  return voters.filter((v) => v.action === 'SUPER_LIKE' && v.isLead).length;
+}
+function staffSuperLikeCountOf(voters) {
+  return voters.filter((v) => v.action === 'SUPER_LIKE' && !v.isLead).length;
 }
 
 export default function RecommendationList({ personaId, selectedId, onSelect, onToast }) {
@@ -35,8 +39,13 @@ export default function RecommendationList({ personaId, selectedId, onSelect, on
                 {s.candidate.name}
                 {s.superd && <span className="pill xs solid">패스트트랙</span>}
                 {s.superd && (
-                  <span className="pill xs gold" title="이 후보를 Super Like한 실무진 수 — 점수엔 반영 안 됨, 표시 전용">
-                    {'★'.repeat(superLikeCountOf(s.voters))} ×{superLikeCountOf(s.voters)}
+                  <span className="pill xs gold" title="리더 Super Like 수 — 리더의 확신만 패스트트랙으로 작동합니다">
+                    {'★'.repeat(leadSuperLikeCountOf(s.voters))} 리더 확신 ×{leadSuperLikeCountOf(s.voters)}
+                  </span>
+                )}
+                {staffSuperLikeCountOf(s.voters) > 0 && (
+                  <span className="pill xs line" title="실무진 Super Like 수 — 패스트트랙에는 반영되지 않는 참고 신호입니다">
+                    ☆ 실무진 참고 ×{staffSuperLikeCountOf(s.voters)}
                   </span>
                 )}
                 {recentIds.has(s.candidate.id) && <span className="pill xs grey">최근 Super Like</span>}

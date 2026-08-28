@@ -52,6 +52,7 @@ function rowToEmployee(row) {
     department: row.department,
     role: row.role,
     personaId: row.persona_id,
+    isLead: !!row.is_lead,
   };
 }
 
@@ -344,7 +345,7 @@ function saveDecision(candidateId, answers) {
 function votersOf(candidateId) {
   const db = getDb();
   const rows = db
-    .prepare(`SELECT sl.*, e.name AS emp_name, e.role AS emp_role FROM swipe_log sl
+    .prepare(`SELECT sl.*, e.name AS emp_name, e.role AS emp_role, e.is_lead AS emp_is_lead FROM swipe_log sl
               JOIN employee e ON e.id = sl.employee_id
               WHERE sl.candidate_id = ? AND sl.action != 'PASS'`)
     .all(candidateId);
@@ -362,6 +363,7 @@ function votersOf(candidateId) {
         employeeId: r.employee_id,
         employeeName: r.emp_name,
         employeeRole: r.emp_role,
+        isLead: !!r.emp_is_lead,
         action: r.action,
         superLikeReason: r.super_like_reason,
         createdAt: r.created_at,
@@ -382,12 +384,18 @@ function passReasonCounts(candidateId) {
   return Object.fromEntries(rows.map((r) => [r.pass_reason, r.n]));
 }
 
-/** HR 추천 리스트 — 수퍼라이크(패스트트랙) 우선, 그다음 태그 스코어 순. */
+/**
+ * HR 추천 리스트 — 패스트트랙(상단 고정) 우선, 그다음 종합 적합도 순.
+ * 패스트트랙은 "리더의 Super Like가 있는가"로만 결정한다(멘토링 Day6_3_1) — 일반 실무진의
+ * Super Like까지 패스트트랙으로 작동하면 면접 대상자가 무제한으로 늘어나 시간 병목이
+ * 되살아나는 자기모순이 생기기 때문. 일반 실무진의 Super Like는 votersOf()에 그대로
+ * 남아 "참고 신호"로 보이지만, 이 정렬/배지에는 관여하지 않는다.
+ */
 function recommendations(personaId) {
   const profile = prefProfile(personaId);
   const scored = poolOf(personaId).map((c) => {
     const voters = votersOf(c.id);
-    const superd = voters.some((v) => v.action === 'SUPER_LIKE');
+    const superd = voters.some((v) => v.action === 'SUPER_LIKE' && v.isLead);
     return {
       candidate: c,
       score: scoreOf(c.axisScores, profile),

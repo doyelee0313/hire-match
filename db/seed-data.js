@@ -12,18 +12,20 @@ const PERSONAS = [
   { persona_id:'sales', title:'B2B 세일즈 채용',   short:'B2B 세일즈', department:'세일즈팀'   },
 ];
 
-/* 실무진은 자기 직무의 채용만 본다 */
+/* 실무진은 자기 직무의 채용만 본다.
+   is_lead: 팀당 1명 — 이 사람의 Super Like만 패스트트랙으로 작동한다 (멘토링 Day6_3_1 반영).
+   나머지 실무진의 Super Like는 그대로 기록·집계되지만 "참고 신호"로만 표시된다. */
 const EMPLOYEES = [
-  { employee_id:'e01', name:'김도현', department:'개발팀',     role:'백엔드 리드', persona_id:'dev'   },
-  { employee_id:'e02', name:'박서준', department:'개발팀',     role:'프론트엔드',  persona_id:'dev'   },
-  { employee_id:'e03', name:'이하늘', department:'개발팀',     role:'플랫폼',      persona_id:'dev'   },
-  { employee_id:'e04', name:'최민석', department:'개발팀',     role:'백엔드',      persona_id:'dev'   },
-  { employee_id:'e05', name:'정유진', department:'교육기획팀', role:'커리큘럼 리드', persona_id:'edu' },
-  { employee_id:'e06', name:'한소영', department:'교육기획팀', role:'기업교육',    persona_id:'edu'   },
-  { employee_id:'e07', name:'오지훈', department:'교육기획팀', role:'콘텐츠',      persona_id:'edu'   },
-  { employee_id:'e08', name:'강태우', department:'세일즈팀',   role:'엔터프라이즈', persona_id:'sales' },
-  { employee_id:'e09', name:'윤채원', department:'세일즈팀',   role:'어카운트',    persona_id:'sales' },
-  { employee_id:'e10', name:'임성호', department:'세일즈팀',   role:'공공',        persona_id:'sales' },
+  { employee_id:'e01', name:'김도현', department:'개발팀',     role:'백엔드 리드',       persona_id:'dev',   is_lead:1 },
+  { employee_id:'e02', name:'박서준', department:'개발팀',     role:'프론트엔드',        persona_id:'dev'   },
+  { employee_id:'e03', name:'이하늘', department:'개발팀',     role:'플랫폼',            persona_id:'dev'   },
+  { employee_id:'e04', name:'최민석', department:'개발팀',     role:'백엔드',            persona_id:'dev'   },
+  { employee_id:'e05', name:'정유진', department:'교육기획팀', role:'커리큘럼 리드',     persona_id:'edu',   is_lead:1 },
+  { employee_id:'e06', name:'한소영', department:'교육기획팀', role:'기업교육',          persona_id:'edu'   },
+  { employee_id:'e07', name:'오지훈', department:'교육기획팀', role:'콘텐츠',            persona_id:'edu'   },
+  { employee_id:'e08', name:'강태우', department:'세일즈팀',   role:'엔터프라이즈 리드', persona_id:'sales', is_lead:1 },
+  { employee_id:'e09', name:'윤채원', department:'세일즈팀',   role:'어카운트',          persona_id:'sales' },
+  { employee_id:'e10', name:'임성호', department:'세일즈팀',   role:'공공',              persona_id:'sales' },
 ];
 
 /* 자기소개서(지원 동기, 주요 경험) — id별로 따로 관리한다. 실제 이력서(S로 시작하는 후보)는
